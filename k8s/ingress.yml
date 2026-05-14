@@ -1,18 +1,35 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: captsone-ingress
+  name: codespace-ingress
   labels:
-    app.kubernetes.io/name: capstone-ingress
+    app.kubernetes.io/name: codespace-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
 spec:
   ingressClassName: nginx
   rules:
-   - http:
+  - http:
       paths:
       - pathType: Prefix
         path: "/api/sandbox"
         backend:
           service:
             name: sandbox-service
+            port: 
+              number: 80
+
+
+  - host: "*.preview.localhost"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: router-service
             port: 
               number: 80

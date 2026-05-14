@@ -1,43 +1,42 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name:  sandbox-deployment
+  name:  router-deployment
   labels:
-    name:  sandbox-deployment
+    name:  router-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: sandbox
+      app:  router
   template:
     metadata:
       labels:
-        app: sandbox
+        app:  router
     spec:
-      serviceAccountName: resource-manager
       containers:
-      - image: sandbox:v2
+      - image:  router:v2
         imagePullPolicy: IfNotPresent
-        name:  sandbox-container
+        name:  router-server
         resources:
-          limits:
-            cpu: "500m"
-            memory: "400Mi"
           requests:
             cpu: "250m"
-            memory: "200Mi"
+            memory: "250M"
+          limits:
+            cpu: "500m"
+            memory: "500M"
         livenessProbe:
           httpGet:
-            path: /api/sandbox/health
+            path: /api/status/healthz
             port: 3000
           initialDelaySeconds: 90
           timeoutSeconds: 10
         readinessProbe:
           httpGet:
-            path: /api/sandbox/health
+            path: /api/status/readyz
             port: 3000
           initialDelaySeconds: 30
-          timeoutSeconds: 10      
+          timeoutSeconds: 10    
         ports:
         - containerPort:  3000
-          name:  main-sandbox
+          name:  my-name
