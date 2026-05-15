@@ -16,4 +16,6 @@ COPY . .
 
 EXPOSE 3000
 
+RUN mkdir /workspace
+
 CMD ["pnpm", "run", "start"]
