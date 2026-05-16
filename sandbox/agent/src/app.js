@@ -50,7 +50,7 @@ app.get('/list-files', async (req, res) => {
             const fullPath = path.join(Dir, entry.name);
             const relativePath = path.relative(baseDir, fullPath);
 
-            if (entry.isDirectory() && !['node_modules', '.git', 'dist'].includes(entry.name)) {
+            if (entry.isDirectory() && ['node_modules', '.git', 'dist'].includes(entry.name)) {
                 continue;
             }
             if (entry.isDirectory()) {
@@ -102,11 +102,12 @@ app.get('/read-files', async (req, res) => {
         try {
             const content = await fs.promises.readFile(filePath, 'utf8');
             return {
-                [filePath.replace(WORKING_DIR, '')]: content
+                [filePath.replace(WORKING_DIR, '')]: content,
             }
         } catch (error) {
-            console.error(`Error reading file ${file}:`, error);
-            return { [filePath.replace(WORKING_DIR, '')]: `Error reading file: ${error.message}` };
+            return {
+                [filePath.replace(WORKING_DIR, '')]: `Error reading file: ${err.message}`,
+            }
         }
     }))
     res.status(200).json({
@@ -135,39 +136,43 @@ app.get('/read-files', async (req, res) => {
 app.patch('/update-files', async (req, res) => {
     const updates = req.body.updates;
 
-    if(!updates || !Array.isArray(updates)) {
+    if (!updates || !Array.isArray(updates)) {
         return res.status(400).json({
             message: "Invalid updates format. Expected an array of updates.",
             status: "error"
         });
     }
     const results = await Promise.all(updates.map(async (update) => {
-        const {file, content} = update;
+        const { file, content } = update;
         const filePath = path.join(WORKING_DIR, file);
 
-        try{
-            console.log(path.dirname(filePath),filePath);
+        try {
+            console.log(`Updating file: ${filePath}`);
 
             await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
             await fs.promises.writeFile(filePath, content, 'utf-8');
 
             return {
-                [filePath]: "File updated successfully"
+                file: path.relative(WORKING_DIR, filePath),
+                content: content,
+                status: "success"
             }
-            
+
         }
-        catch(error){
+        catch (error) {
             console.error(`Error updating file ${file}:`, error);
             return {
-                [filePath]: `Error updating file: ${error.message}`
+                file: file,
+                status: "error",
+                message: error.message
             }
         }
     }))
-        res.status(200).json({
-            message: "Files updated successfully",
-            status: "ok",
-            results
-        })
+    res.status(200).json({
+        message: "Files updated successfully",
+        status: "ok",
+        results
+    })
 });
 
 
@@ -179,35 +184,39 @@ app.patch('/update-files', async (req, res) => {
 app.post('/create-files', async (req, res) => {
     const files = req.body.files;
 
-    if(!files || !Array.isArray(files)) {
+    if (!files || !Array.isArray(files)) {
         return res.status(400).json({
             message: "Invalid files format. Expected an array of files.",
             status: "error"
         });
     }
     const results = await Promise.all(files.map(async (fileObj) => {
-        const {file, content} = fileObj;
+        const { file, content } = fileObj;
         const filepath = path.join(WORKING_DIR, file);
 
-        try{
+        try {
             await fs.promises.mkdir(path.dirname(filepath), { recursive: true });
             await fs.promises.writeFile(filepath, content, 'utf-8');
 
             return {
-                [filepath]: "File created successfully"
+                file: path.relative(WORKING_DIR, filepath),
+                content: content,
+                status: "success"
             }
         }
-        catch(error){
+        catch (error) {
             console.error(`Error creating file ${file}:`, error);
             return {
-                [filepath]: `Error creating file: ${error.message}`
+                file: file,
+                status: "error",
+                message: error.message
             }
         }
     }))
     res.status(200).json({
         message: "Files created successfully",
         status: "ok",
-        results
+        files: results
     });
 });
 

@@ -8,9 +8,14 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] })
   ],
-  server:{
-    host:'0.0.0.0',
+  server: {
+    host: '0.0.0.0',
     port: 5173,
-    allowedHosts:true
+    allowedHosts: true,
+    watch: {
+      usePolling: true,
+      interval: 300,
+      ignored: ['**/node_modules/**']
+    }
   }
 })

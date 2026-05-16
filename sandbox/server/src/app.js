@@ -34,7 +34,6 @@ app.post('/api/sandbox/start', async (req, res) => {
     try {
         const sandboxId = uuid();
         const previewUrl = `http://${sandboxId}.preview.localhost`;
-        const agentUrl = `http://${sandboxId}.agent.localhost`;
 
         await Promise.all([
             createPod(sandboxId),
@@ -44,8 +43,7 @@ app.post('/api/sandbox/start', async (req, res) => {
         res.status(201).json({
             message: 'sandbox environment created successfully',
             sandboxId: sandboxId,
-            previewUrl,
-            agentUrl
+            previewUrl
         });
     } catch (error) {
         console.error('Failed to start sandbox', error);
