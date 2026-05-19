@@ -1,14 +1,14 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name:  router-service
+  name:  ai-service
   labels:
-    app:  router
+    app: ai-service
 spec:
   selector:
-    app:  router
-  type:   NodePort
+    app:  ai-server
+  type:  NodePort
   ports:
-  - name:  http
+  - name:  ai-http
     port:  80
     targetPort:  3000

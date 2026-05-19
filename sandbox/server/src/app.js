@@ -3,24 +3,14 @@ import morgan from 'morgan';
 import { v7 as uuid } from 'uuid';
 import { createPod } from './kubernetes/pod.js';
 import { createService } from './kubernetes/service.js';
-import { Log } from '@kubernetes/client-node';
+
 
 const app = express();
 
 app.use(express.json());
 app.use(morgan('dev'));
-app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(204);
-    }
 
-    next();
-});
-console.log('reload');
 
 
 app.get('/api/sandbox/health', (req, res) => {

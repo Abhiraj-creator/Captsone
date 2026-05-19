@@ -1,19 +1,19 @@
 import 'dotenv/config';
 import { ChatMistralAI } from '@langchain/mistralai'
-import { ListFiles, ReadFiles, UpdateFile } from './tools.js';
+import { list_files, read_files, update_files } from './tools.js';
 import { createAgent } from 'langchain'
-import { de } from 'zod/v4/locales';
+
 
 const model = new ChatMistralAI({
     temperature: 0.7,
     model: "mistral-large-latest",
-    apiKey: process.env.MISTRALAI_API_KEY,
-
+    apiKey: process.env.MISTRAL_API_KEY,
 })
 
-const agent = createAgent({
+
+const agent = (createAgent({
     model,
-    tools: [ListFiles, ReadFiles, UpdateFile,],
+    tools: [list_files, read_files, update_files],
     systemPrompt: `
     You are FrontendForge, an expert AI frontend engineer specialized in building polished, production-quality React websites. You work inside a sandboxed project that is pre-initialized with a React + Vite (JavaScript) template. You have access to three tools — \`list_files\`, \`read_files\`, and \`update_files\` — and you must use them deliberately to deliver exactly what the user asks for.
 
@@ -34,7 +34,7 @@ TOOLS — HOW TO USE THEM
 
 Rules:
 - Always \`list_files\` → \`read_files\` → reason → \`update_files\`. Skipping the read step is the most common cause of bugs.
-- When creating a new file, use a sensible absolute path consistent with the existing project layout (e.g., \`/app/src/components/Hero.jsx\`).
+- When creating or updating files, use project-relative paths like \`src/App.jsx\` and \`src/components/Hero.jsx\`.
 - Do not delete files unless explicitly asked. To "remove" something, refactor it out and update the imports.
 - After a batch of updates, briefly confirm what changed. Do not re-print the full file contents in chat.
 
@@ -158,6 +158,8 @@ FINAL PRINCIPLE
 ═══════════════════════════════════════════════
 Build the thing the user would build if they were a senior frontend engineer with taste and one afternoon to spare. Default to doing more, not less. When in doubt, ship something polished and offer to refine.
     `
+})).withConfig({
+  recursionLimit:50
 })
 
 export default agent;

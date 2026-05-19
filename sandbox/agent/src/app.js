@@ -2,25 +2,24 @@ import express from 'express';
 import morgan from 'morgan';
 import fs from 'fs';
 import path from 'path';
-import { log } from 'console';
+import pty from 'node-pty';
+import ws from 'ws';
+import os from 'os';
+import http from 'http';
+import { WebSocketServer } from 'ws';
+import cors from 'cors';
+app.use(cors({
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+    origin: "*",
+}));
 
 const app = express();
-const WORKING_DIR = "/workspace"
+const WORKING_DIR = '/workspace';
+const HttpServer = http.createServer(app);
 
 app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(204);
-    }
-
-    next();
-});
 
 app.get('/', (req, res) => {
     res.status(200).json({
@@ -29,196 +28,204 @@ app.get('/', (req, res) => {
     });
 });
 
-/**
- * @route Get /list-files
- * @description list all the files in the working directory and its subdirectories returns a json object with file path of the working directory and its subdirectories .exclude the node_modules directory and .git directory and dist directory if they exist
- * eg.{
- *  "files":[
- *  "file1.txt",
- * "subdir/file2.txt",
- * "subdir/file3.txt"]
- * }
-*/
-app.get('/list-files', async (req, res) => {
+
+function CreateTerminal() {
+    const Shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
+
+    const PtyProcess = pty.spawn(Shell, [], {
+        name: 'xterm-color',
+        cols: 80,
+        rows: 30,
+        cwd: WORKING_DIR,
+        env: process.env,
+    });
+    return PtyProcess;
+
+}
 
 
-    const ListFiles = async (Dir, baseDir) => {
-        const entries = await fs.promises.readdir(Dir, { withFileTypes: true });
+    const wss = new WebSocketServer({ server: HttpServer });
+    wss.on('connection', (ws) => {
+        console.log('Client connected')
+
+        const terminal = CreateTerminal()
+
+        terminal.onData((data) => {
+            ws.emit('terminal-output', data)
+        })
+        terminal.onExit(({ exitCode, signal }) => {
+            console.log(`PTY process exited with code: ${exitCode}, signal: ${signal}`);
+        })
+
+        ws.on('terminal-input', (data) => {
+            terminal.write(data.toString())
+        })
+
+        ws.on('close', () => {
+            console.log('Client disconnected')
+            terminal.kill()
+        })
+    })
+
+app.get("/list-files", async (req, res) => {
+
+    const listFiles = async (dir, baseDir) => {
+        const entries = await fs.promises.readdir(dir, { withFileTypes: true });
         const files = [];
 
         for (const entry of entries) {
-            const fullPath = path.join(Dir, entry.name);
+            const fullPath = path.join(dir, entry.name);
             const relativePath = path.relative(baseDir, fullPath);
 
+            // Exclude certain directories
             if (entry.isDirectory() && ['node_modules', '.git', 'dist'].includes(entry.name)) {
                 continue;
             }
+
             if (entry.isDirectory()) {
-                files.push(...await ListFiles(fullPath, baseDir))
+                files.push(...await listFiles(fullPath, baseDir));
             } else {
                 files.push(relativePath);
             }
         }
+
         return files;
     }
+
     try {
-        const files = await ListFiles(WORKING_DIR, WORKING_DIR);
+        const files = await listFiles(WORKING_DIR, WORKING_DIR);
         res.status(200).json({
-            message: "Files listed successfully",
-            status: "ok",
-            files
-        })
-    } catch (error) {
+            message: 'Files listed successfully',
+            files,
+        });
+    } catch (err) {
         res.status(500).json({
-            message: "Error listing files",
-            status: "error",
-            error: error.message
-        })
+            message: `Error listing files: ${err.message}`,
+            status: 'error',
+        });
     }
 
-});
+})
+
 
 /**
- * @route get /read-files
- * @description read all the conent of the files passed in the query parameter and return a json object with file path and its content eg. {
- *  eg. /read-files?files=file1.txt,subdir/file2.txt
+ * @route GET /read-files
+ * @description Reads the content of all files requested in the query parameter 'files' and returns their content as a JSON object.
+ * - eg. /read-files?files=file1.txt,/src/file2.txt
  */
+app.get("/read-files", async (req, res) => {
 
-app.get('/read-files', async (req, res) => {
     const files = req.query.files;
 
     if (!files) {
         return res.status(400).json({
-            message: "No files provided",
-            status: "error"
-        })
+            message: 'No files specified in query parameter',
+            status: 'error',
+        });
     }
 
-    const FileList = files.split(',');
+    const fileList = files.split(',');
 
-    const results = await Promise.all(FileList.map(async (file) => {
+    const results = await Promise.all(fileList.map(async (file) => {
         const filePath = path.join(WORKING_DIR, file);
-
         try {
-            const content = await fs.promises.readFile(filePath, 'utf8');
+            const content = await fs.promises.readFile(filePath, 'utf-8');
             return {
                 [filePath.replace(WORKING_DIR, '')]: content,
             }
-        } catch (error) {
+        } catch (err) {
             return {
                 [filePath.replace(WORKING_DIR, '')]: `Error reading file: ${err.message}`,
             }
         }
-    }))
+    }));
+
     res.status(200).json({
-        message: "Files read successfully",
-        status: "ok",
-        files: results
+        message: 'File contents',
+        files: results,
     });
-});
+
+})
 
 
 /**
- * @route patch update-files
- * @description update the content of the files passed in request body and return a json object containing an property "updates" with a json array of objects ,each object should have an "file "property with file path and a "content" property with the updated content of the file eg. {
- * "updates:[
- * {
- *  "file":"file1.txt",
- * "content":"updated content of file1.txt"
- * },
- * {
- * "file":"subdir/file2.txt",
- * "content":"updated content of subdir/file2.txt"
- * }
- * ]"
+ * @route PATCH /update-files
+ * @description Updates the content of files specified in the request body. The request body should container a property 'updates' with a JSON Array of object, each object should have a 'file' property specifying the file path (relative to the working directory) and a 'content' property specifying the new content for the file.
  */
+app.patch("/update-files", async (req, res) => {
 
-app.patch('/update-files', async (req, res) => {
     const updates = req.body.updates;
 
     if (!updates || !Array.isArray(updates)) {
         return res.status(400).json({
-            message: "Invalid updates format. Expected an array of updates.",
-            status: "error"
+            message: 'Invalid request body. Expected a JSON object with an "updates" property containing an array of file updates.',
+            status: 'error',
         });
     }
+
     const results = await Promise.all(updates.map(async (update) => {
         const { file, content } = update;
         const filePath = path.join(WORKING_DIR, file);
-
         try {
-            console.log(`Updating file: ${filePath}`);
+
+            console.log(path.dirname(filePath), filePath);
 
             await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
             await fs.promises.writeFile(filePath, content, 'utf-8');
-
             return {
-                file: path.relative(WORKING_DIR, filePath),
-                content: content,
-                status: "success"
+                [filePath]: 'File updated successfully',
             }
-
-        }
-        catch (error) {
-            console.error(`Error updating file ${file}:`, error);
+        } catch (err) {
             return {
-                file: file,
-                status: "error",
-                message: error.message
+                [filePath]: `Error updating file: ${err.message}`,
             }
         }
-    }))
+    }));
+
     res.status(200).json({
-        message: "Files updated successfully",
-        status: "ok",
-        results
-    })
-});
+        message: 'File update results',
+        results,
+    });
+})
 
 
 /**
- * @route post /create-files
- * @description create new files with the content passed in request body and return a json object containing an property "files" with a json array of objects ,each object should have an "file "property with file path and a "content" property with the content of the created file eg. {
+ * @route POST /create-files
+ * @description Creates new files with the content specified in the request body. The request body should contain a property 'files' with a JSON Array of objects, each object should have a 'file' property specifying the file path (relative to the working directory) and a 'content' property specifying the content for the new file.
  */
-
-app.post('/create-files', async (req, res) => {
+app.post("/create-files", async (req, res) => {
     const files = req.body.files;
 
     if (!files || !Array.isArray(files)) {
         return res.status(400).json({
-            message: "Invalid files format. Expected an array of files.",
-            status: "error"
+            message: 'Invalid request body. Expected a JSON object with a "files" property containing an array of file objects.',
+            status: 'error',
         });
     }
+
     const results = await Promise.all(files.map(async (fileObj) => {
         const { file, content } = fileObj;
-        const filepath = path.join(WORKING_DIR, file);
-
+        const filePath = path.join(WORKING_DIR, file);
         try {
-            await fs.promises.mkdir(path.dirname(filepath), { recursive: true });
-            await fs.promises.writeFile(filepath, content, 'utf-8');
 
+            await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+            await fs.promises.writeFile(filePath, content, 'utf-8');
             return {
-                file: path.relative(WORKING_DIR, filepath),
-                content: content,
-                status: "success"
+                [filePath]: 'File created successfully',
+            }
+        } catch (err) {
+            return {
+                [filePath]: `Error creating file: ${err.message}`,
             }
         }
-        catch (error) {
-            console.error(`Error creating file ${file}:`, error);
-            return {
-                file: file,
-                status: "error",
-                message: error.message
-            }
-        }
-    }))
+    }));
+
     res.status(200).json({
-        message: "Files created successfully",
-        status: "ok",
-        files: results
+        message: 'File creation results',
+        results,
     });
-});
+})
 
 
-export default app;
+
+export default HttpServer;

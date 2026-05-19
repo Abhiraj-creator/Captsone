@@ -5,7 +5,7 @@ metadata:
 spec:
   selector:
     app:  sandbox
-  type:   ClusterIP 
+  type:   NodePort
   ports:
   - name:  sandbox-service-port
     port:  80

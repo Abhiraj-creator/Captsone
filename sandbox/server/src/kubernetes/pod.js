@@ -40,13 +40,19 @@ export async function createPod(sandboxId) {
                     image: 'template',
                     imagePullPolicy: 'IfNotPresent',
                     ports: [{ containerPort: 5173, name: 'http' }],
+                    env: [
+                        {
+                            name: 'DISABLE_VITE_HMR',
+                            value: 'true'
+                        }
+                    ],
                     resources: {
                         limits: {
-                            cpu: '500m',
-                            memory: '256Mi'
+                            cpu: '250m',
+                            memory: '384Mi'
                         },
                         requests: {
-                            cpu: '250m',
+                            cpu: '100m',
                             memory: '128Mi'
                         }
                     },
