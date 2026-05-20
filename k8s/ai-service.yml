@@ -7,7 +7,7 @@ metadata:
 spec:
   selector:
     app:  ai-server
-  type:  NodePort
+  type:  ClusterIP
   ports:
   - name:  ai-http
     port:  80

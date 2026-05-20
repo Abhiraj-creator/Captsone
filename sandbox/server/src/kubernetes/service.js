@@ -31,7 +31,7 @@ export async function createService(sandboxId) {
                     protocol: 'TCP'
                 }
             ],
-            type: 'NodePort'
+            type: 'ClusterIP'
         }
     };
 
