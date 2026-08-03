@@ -14,7 +14,6 @@ export async function createService(sandboxId) {
         },
         spec: {
             selector: {
-                app: 'sandbox',
                 sandboxId: sandboxId
             },
             ports: [

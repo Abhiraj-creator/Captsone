@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #89E900;
+  --color-primary-container: rgba(137, 233, 0, 0.1);
+  --color-background: #222222;
+  --color-surface: #181818;
+  --color-surface-container: #1f2020;
+  --color-surface-container-high: #2a2a2a;
+  --color-surface-container-low: #131313;
+  --color-surface-container-lowest: #0e0e0e;
+  --color-on-surface: #e5e2e1;
+  --color-on-surface-variant: #8a947b;
+  --color-outline-variant: rgba(137, 233, 0, 0.15);
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  --color-tertiary: #a5eeff;
+  
+  --font-sans: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* Custom Scrollbar for IDE feel */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(137, 233, 0, 0.25);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(137, 233, 0, 0.5);
+}
+
+.glass-panel {
+  background-color: rgba(34, 34, 34, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.active-glow {
+  box-shadow: 0 0 10px rgba(137, 233, 0, 0.25);
+  border-color: #89E900 !important;
+}
+
+.pane-border {
+  border-right: 1px solid rgba(137, 233, 0, 0.1);
+}
+
+.workspace-resizer {
+  position: relative;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+
+.workspace-resizer:hover {
+  background: rgba(137, 233, 0, 0.2);
+}
+
+.workspace-resizer-vertical {
+  width: 6px;
+  cursor: col-resize;
+}
+
+.workspace-resizer-horizontal {
+  height: 6px;
+  cursor: row-resize;
+}
+
+body.resizing-workspace,
+body.resizing-workspace * {
+  user-select: none !important;
+}
+
+body.resizing-workspace {
+  cursor: col-resize;
+}
+
+body.resizing-workspace.resizing-workspace-row {
+  cursor: row-resize;
+}
