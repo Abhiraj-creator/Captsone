@@ -16,8 +16,8 @@ spec:
     spec:
       serviceAccountName: resource-manager
       containers:
-      - image:  router
-        imagePullPolicy: IfNotPresent
+      - image: registry.digitalocean.com/YOUR_REGISTRY_NAME/router:latest
+        imagePullPolicy: Always
         name:  router-server
         resources:
           requests:

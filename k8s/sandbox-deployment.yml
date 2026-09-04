@@ -16,8 +16,8 @@ spec:
     spec:
       serviceAccountName: resource-manager
       containers:
-      - image: sandbox
-        imagePullPolicy: IfNotPresent
+      - image: registry.digitalocean.com/YOUR_REGISTRY_NAME/sandbox:latest
+        imagePullPolicy: Always
         name:  sandbox-container
         resources:
           limits:
