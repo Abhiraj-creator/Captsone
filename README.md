@@ -22,6 +22,25 @@ Ensure you have the following installed and configured:
 
 ## 🚀 Setup Instructions
 
+### AWS EKS deployment
+
+The existing `deploy.ps1` flow is for the single-EC2 k3s setup. For EKS, install
+AWS CLI, Docker, `kubectl`, and `eksctl`, then run:
+
+```powershell
+.\scripts\create-eks.ps1 -Region us-east-1
+.\scripts\build-push.ps1 -AccountId 123456789012 -Region us-east-1
+.\scripts\deploy-eks.ps1 -AccountId 123456789012 -Region us-east-1 -PreviewDomain example.com -MistralApiKey $env:MISTRAL_API_KEY
+```
+
+Before the last command, install the AWS Load Balancer Controller in the EKS
+cluster and ensure the worker-node IAM role can pull from ECR. The current AWS
+installation flow is documented [here](https://docs.aws.amazon.com/eks/latest/userguide/lbc-helm.html).
+The ALB address is available with `kubectl get ingress` after the deployments
+become ready.
+Create wildcard DNS records pointing `*.preview.example.com` and
+`*.agent.example.com` at the ALB address so sandbox preview URLs resolve.
+
 ### 1. Install NGINX Ingress Controller
 The project uses the Nginx Ingress Controller to handle wildcard subdomain routing. Install it using the official manifest:
 

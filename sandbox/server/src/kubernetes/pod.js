@@ -1,5 +1,11 @@
 import k8sApi from "./config.js";
 
+const templateImage = process.env.SANDBOX_TEMPLATE_IMAGE || 'template';
+const agentImage = process.env.SANDBOX_AGENT_IMAGE || 'agent';
+const imagePullSecrets = process.env.SANDBOX_IMAGE_PULL_SECRET
+    ? [{ name: process.env.SANDBOX_IMAGE_PULL_SECRET }]
+    : undefined;
+
 export async function createPod(sandboxId) {
 
     const podManifest = {
@@ -12,6 +18,7 @@ export async function createPod(sandboxId) {
             }
         },
         spec: {
+            ...(imagePullSecrets && { imagePullSecrets }),
             volumes: [
                 {
                     name: 'workspace-volume',
@@ -21,7 +28,7 @@ export async function createPod(sandboxId) {
             initContainers: [
                 {
                     name: 'init-container',
-                    image: 'template',
+                    image: templateImage,
                     imagePullPolicy: 'IfNotPresent',
                     command: ['sh', '-c', 'cp -r /workspace/. /seed/'],
                     volumeMounts: [
@@ -36,7 +43,7 @@ export async function createPod(sandboxId) {
             containers: [
                 {
                     name: 'sandbox-container',
-                    image: 'template',
+                    image: templateImage,
                     imagePullPolicy: 'IfNotPresent',
                     ports: [{ containerPort: 5173, name: 'http' }],
                     resources: {
@@ -58,7 +65,7 @@ export async function createPod(sandboxId) {
                 },
                 {
                     name: 'agent-container',
-                    image: 'agent',
+                    image: agentImage,
                     imagePullPolicy: 'IfNotPresent',
                     ports: [{ containerPort: 3000, name: 'http' }],
                     resources: {

@@ -1,15 +1,14 @@
 import 'dotenv/config';
-import { ChatMistralAI } from '@langchain/mistralai'
+import { ChatGroq } from "@langchain/groq"
 import { list_files, read_files, update_files } from './tools.js';
 import { createAgent } from 'langchain'
 
 
-const model = new ChatMistralAI({
+const model = new ChatGroq({
+    model: "openai/gpt-oss-120b",
     temperature: 0.7,
-    model: "mistral-large-latest",
-    apiKey: process.env.MISTRAL_API_KEY,
+    apiKey: process.env.MISTRAL_API_KEY
 })
-
 
 const agent = (createAgent({
     model,

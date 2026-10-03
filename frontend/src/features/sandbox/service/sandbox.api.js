@@ -14,7 +14,7 @@ export async function startSandbox() {
     return response.data;
   } catch (error) {
     const errMsg = error.response?.data?.message || error.message || 'Failed to start sandbox environment';
-    throw new Error(errMsg);
+    throw new Error(errMsg,{cause: error});
   }
 }
 
@@ -28,7 +28,7 @@ export async function getActiveSandbox() {
     return response.data;
   } catch (error) {
     const errMsg = error.response?.data?.message || error.message || 'Failed to check active sandbox';
-    throw new Error(errMsg);
+    throw new Error(errMsg,{cause: error});
   }
 }
 
@@ -43,7 +43,7 @@ export async function listFiles(sandboxId) {
     return response.data.files || [];
   } catch (error) {
     const errMsg = error.response?.data?.message || error.message || 'Failed to list files from sandbox agent';
-    throw new Error(errMsg);
+    throw new Error(errMsg,{cause: error});
   }
 }
 
@@ -78,7 +78,7 @@ export async function readFiles(sandboxId, files) {
     return fileContents;
   } catch (error) {
     const errMsg = error.response?.data?.message || error.message || 'Failed to read files from sandbox agent';
-    throw new Error(errMsg);
+    throw new Error(errMsg,{cause: error});
   }
 }
 
@@ -103,7 +103,7 @@ export async function updateFiles(sandboxId, updates) {
     return response.data;
   } catch (error) {
     const errMsg = error.response?.data?.message || error.message || 'Failed to update files in sandbox';
-    throw new Error(errMsg);
+    throw new Error(errMsg, {cause: error});
   }
 }
 

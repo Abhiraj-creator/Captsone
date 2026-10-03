@@ -21,6 +21,13 @@ spec:
       - image: YOUR_AWS_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/capstone/sandbox:latest
         imagePullPolicy: Always
         name:  sandbox-container
+        env:
+        - name: SANDBOX_TEMPLATE_IMAGE
+          value: "YOUR_AWS_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/capstone/template:latest"
+        - name: SANDBOX_AGENT_IMAGE
+          value: "YOUR_AWS_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/capstone/agent:latest"
+        - name: SANDBOX_IMAGE_PULL_SECRET
+          value: ecr-creds
         resources:
           limits:
             cpu: "250m"
