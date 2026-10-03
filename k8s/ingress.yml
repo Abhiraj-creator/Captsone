@@ -5,16 +5,16 @@ metadata:
   labels:
     app.kubernetes.io/name: codespace-ingress
   annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    # Traefik: Use the long-timeout middleware for WebSocket / SSE connections
+    traefik.ingress.kubernetes.io/router.middlewares: default-long-timeout@kubernetescrd
+    traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   rules:
 
   # -------------------------------------------------------
-  # API routes (no host restriction — works with any domain or IP)
+  # API routes + Frontend (no host restriction)
+  # Works with the cluster's public IP on port 80.
   # -------------------------------------------------------
   - http:
       paths:
@@ -32,7 +32,7 @@ spec:
             name: sandbox-service
             port:
               number: 80
-      # Frontend: catch-all (must be last, least specific)
+      # Frontend SPA — must be last (least specific path)
       - pathType: Prefix
         path: "/"
         backend:
@@ -42,8 +42,7 @@ spec:
               number: 80
 
   # -------------------------------------------------------
-  # DEVELOPMENT: Preview/Agent subdomains (local only)
-  # These use *.localhost which only works on your local machine.
+  # DEVELOPMENT: Preview/Agent subdomains (local minikube only)
   # -------------------------------------------------------
   - host: "*.preview.localhost"
     http:
@@ -68,9 +67,9 @@ spec:
               number: 80
 
   # -------------------------------------------------------
-  # PRODUCTION: Uncomment and replace with your real domain
-  # after deploying to DigitalOcean. Get your domain from
-  # the LoadBalancer EXTERNAL-IP: kubectl get svc -n ingress-nginx
+  # PRODUCTION: Uncomment and set your real domain after deploy.
+  # Get your EC2 public IP from the AWS console, then point
+  # a wildcard DNS A record: *.preview.yourdomain.com → EC2-IP
   # -------------------------------------------------------
   # - host: "*.preview.yourdomain.com"
   #   http:

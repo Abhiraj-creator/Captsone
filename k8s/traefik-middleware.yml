@@ -1,0 +1,22 @@
+---
+# Traefik Middleware: Long timeout for WebSocket and SSE connections used by the sandbox
+# Applied to the ingress via annotation:
+#   traefik.ingress.kubernetes.io/router.middlewares: default-long-timeout@kubernetescrd
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: long-timeout
+  namespace: default
+spec:
+  forwardAuth: {}
+---
+# Traefik ServersTransport: sets backend connection timeout to 3600s
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: long-timeout-transport
+  namespace: default
+spec:
+  forwardingTimeouts:
+    responseHeaderTimeout: 3600s
+    readIdleTimeout: 3600s

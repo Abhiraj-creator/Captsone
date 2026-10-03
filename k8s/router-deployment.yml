@@ -14,9 +14,11 @@ spec:
       labels:
         app:  router
     spec:
+      imagePullSecrets:
+      - name: ecr-creds
       serviceAccountName: resource-manager
       containers:
-      - image: registry.digitalocean.com/YOUR_REGISTRY_NAME/router:latest
+      - image: YOUR_AWS_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/capstone/router:latest
         imagePullPolicy: Always
         name:  router-server
         resources:

@@ -50,5 +50,7 @@ manifests:
     - k8s/router-service.yml
     - k8s/frontend-deployment.yml
     - k8s/frontend-service.yml
+    - k8s/traefik-middleware.yml
+    - k8s/ecr-token-refresh.yml
     - k8s/rbac.yml
 

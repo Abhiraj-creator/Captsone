@@ -14,8 +14,10 @@ spec:
       labels:
         app:  ai-server
     spec:
+      imagePullSecrets:
+      - name: ecr-creds
       containers:
-      - image: registry.digitalocean.com/YOUR_REGISTRY_NAME/ai-orchestration:latest
+      - image: YOUR_AWS_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/capstone/ai-orchestration:latest
         imagePullPolicy: Always
         name:  ai-server
         resources:

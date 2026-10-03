@@ -14,9 +14,11 @@ spec:
       labels:
         app: sandbox
     spec:
+      imagePullSecrets:
+      - name: ecr-creds
       serviceAccountName: resource-manager
       containers:
-      - image: registry.digitalocean.com/YOUR_REGISTRY_NAME/sandbox:latest
+      - image: YOUR_AWS_ACCOUNT_ID.dkr.ecr.YOUR_REGION.amazonaws.com/capstone/sandbox:latest
         imagePullPolicy: Always
         name:  sandbox-container
         resources:

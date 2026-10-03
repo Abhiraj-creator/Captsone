@@ -1,0 +1,87 @@
+# ECR credentials expire every 12 hours. This CronJob refreshes
+# the 'ecr-creds' imagePullSecret automatically so pods always
+# have a valid token to pull images from private ECR.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ecr-refresher
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ecr-refresher
+  namespace: default
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "create", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ecr-refresher
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: ecr-refresher
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ecr-refresher
+---
+# Runs every 6 hours to refresh the ECR token before it expires
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ecr-token-refresh
+  namespace: default
+spec:
+  schedule: "0 */6 * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: ecr-refresher
+          restartPolicy: Never
+          containers:
+          - name: ecr-refresher
+            # aws-cli is tiny and has all tools needed
+            image: amazon/aws-cli:latest
+            imagePullPolicy: IfNotPresent
+            env:
+            - name: AWS_REGION
+              value: "YOUR_REGION"          # e.g. us-east-1
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: AWS_SECRET_ACCESS_KEY
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "=> Fetching new ECR login token..."
+              ECR_TOKEN=$(aws ecr get-login-password --region $AWS_REGION)
+              ECR_SERVER="YOUR_AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+
+              echo "=> Deleting old ecr-creds secret (if exists)..."
+              kubectl delete secret ecr-creds --ignore-not-found
+
+              echo "=> Creating new ecr-creds secret..."
+              kubectl create secret docker-registry ecr-creds \
+                --docker-server="$ECR_SERVER" \
+                --docker-username=AWS \
+                --docker-password="$ECR_TOKEN"
+
+              echo "=> ECR token refreshed successfully."
